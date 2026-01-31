@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Somali Hope Secondary School</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #eef3f6;
+  margin: 0;
+  padding: 0;
+}
+
+/* MAIN CONTAINER */
+.container {
+  position: relative;
+  max-width: 520px;
+  margin: 30px auto;
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+/* WATERMARK (NON-BLOCKING) */
+.container::before {
+  content: "";
+  background: url("https://raw.githubusercontent.com/Muha-Technology/Somali-Hope-Asset/main/Logo.png")
+    center no-repeat;
+  background-size: 280px;
+  opacity: 0.06;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none; /* ✅ ALLOWS TYPING */
+}
+
+/* CONTENT ABOVE WATERMARK */
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+}
+
+.header img {
+  width: 110px;
+  margin-bottom: 8px;
+}
+
+h2 {
+  margin: 5px 0;
+  color: #0a7c3b;
+}
+
+.official {
+  font-weight: bold;
+  text-decoration: underline;
+  margin-bottom: 10px;
+}
+
+/* INPUTS */
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+input {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+button {
+  background: #0a7c3b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #085f2c;
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+}
+
+th {
+  background: #f2f2f2;
+}
+
+.summary {
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+/* FOOTER */
+.footer {
+  margin-top: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.signature {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.qr {
+  text-align: center;
+}
+
+.serial {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #555;
+}
+
+/* A4 PRINT */
+@page {
+  size: A4;
+  margin: 20mm;
+}
+
+@media print {
+  body { background: white; }
+  input, button { display: none; }
+  .container {
+    box-shadow: none;
+    margin: 0;
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<div class="content">
+
+  <!-- HEADER -->
+  <div class="header">
+    <img src="https://raw.githubusercontent.com/Muha-Technology/Somali-Hope-Asset/main/Logo.png" alt="School Logo">
+    <h2>Somali Hope Secondary School</h2>
+    <div class="official">OFFICIAL RESULT SLIP</div>
+  </div>
+
+  <!-- INPUT -->
+  <input type="text" id="studentId" placeholder="Enter Student ID">
+  <button onclick="loadResult()">View Result</button>
+  <button onclick="window.print()">🖨 Print / Save PDF</button>
+
+  <!-- RESULT -->
+  <div id="result"></div>
+
+</div>
+</div>
+
+<script>
+function loadResult() {
+  const id = document.getElementById("studentId").value.trim();
+  if (!id) {
+    alert("Please enter Student ID");
+    return;
+  }
+
+  document.getElementById("result").innerHTML = "Loading...";
+
+  google.script.run.withSuccessHandler(function(r) {
+    if (!r) {
+      document.getElementById("result").innerHTML =
+        "<p style='color:red'>Result not found</p>";
+      return;
+    }
+
+    const serial = "SHSS-" + Date.now();
+
+    let html = `
+      <hr>
+      <p><strong>Name:</strong> ${r.name}</p>
+      <p><strong>Term:</strong> ${r.term} | <strong>Year:</strong> ${r.year}</p>
+
+      <table>
+        <tr>
+          <th>Subject</th>
+          <th>Marks</th>
+          <th>Grade</th>
+        </tr>
+    `;
+
+    r.subjects.forEach(s => {
+      html += `
+        <tr>
+          <td>${s.name}</td>
+          <td>${s.marks}</td>
+          <td>${s.grade}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+      </table>
+
+      <div class="summary">
+        Total: ${r.total}<br>
+        Average: ${r.average}<br>
+        Overall Grade: ${r.grade}
+      </div>
+
+      <div class="footer">
+        <div class="signature">
+          -----------------------<br>
+          <strong>Principal’s Signature</strong><br><br>
+          <strong>Date of Issue:</strong> __________________
+        </div>
+
+        <div class="qr">
+          <img src="${r.qr}" width="120"><br>
+          <small>Scan to verify</small>
+        </div>
+      </div>
+
+      <div class="serial">Report Serial: ${serial}</div>
+    `;
+
+    document.getElementById("result").innerHTML = html;
+
+  }).getStudentResult(id);
+}
+</script>
+
+</body>
+</html>
